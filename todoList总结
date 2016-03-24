@@ -1,0 +1,293 @@
+$(document).ready(function(){})和$(function(){})(前一个的简写)这两个方法的效果相同，都是在“dom文档树”加载完成之后执行一个函数(此处的文档树加载完不代表文件加载完)，$(document).ready(function)可以在一个文档中编写多个，且都会被执行。
+window.onload则不同，它是在dom文档树和所有文件(包括图片等元素)加载完成之后执行一个函数，window.onload若在同一文档中存在多个则只会执行一个。
+也就是说$(document).ready(function(){})比window.onload先执行。
+
+
+jQuery中用on来绑定事件，经常的用法有：
+$(document).on("event(事件)","selector(选择器)","data(传递到函数的额外数据，该参数可选)",function(){})
+$("selector(选择器)").on("click","data(传递到函数的额外数据，该参数可选)",function(){})
+
+tip:如果你的事件只需要执行一次操作，可用one("","",function(){})所绑定的方法
+
+多个事件绑定同一个函数：
+$(document).ready(function(){
+  $("selector").on("event1 event2 ...",function(){
+    $("selector").toggleClass("selector");  /*向匹配的元素中添加或删除一个类,然而并没有toggleId属性操作，要操作Id可使用attr() 设置或返回匹配元素的属性和值*/
+  });
+});
+
+
+多个事件绑定不同函数：
+$(document).ready(function(){
+  $("selector").on({
+    event1:function(){$("selector").css("background-color","lightgray");},  
+    event2:function(){$("selector").css("background-color","lightblue");}, 
+    event3:function(){$("selector").css("background-color","yellow");}  
+  });
+});
+
+
+绑定自定义事件：
+$(document).ready(function(){
+  $("selector").on("myOwnEvent", function(event, showName){
+    $(this).text(showName + "! What a beautiful name!").show();
+  });
+  $("button").click(function(){
+    $("p").trigger("myOwnEvent",["Anja"]);/*触发被选中元素执行指定事件类型*/
+  });
+});
+
+tip:$(selector).trigger(event,[param1,param2,...])  event(必需)  [param1,param2,...]（可选，传递到事件处理程序的额外参数）
+
+
+传递数据到函数：
+function handlerName(event) 
+{
+  alert(event.data.msg);
+}
+
+$(document).ready(function(){
+  $("p").on("click", {msg: "You just clicked me!"}, handlerName)
+});
+
+
+imp:适用于未创建的元素
+$(document).ready(function(){
+  $("div").on("click","p",function(){
+    $(this).slideToggle();
+  });
+  $("button").click(function(){
+    $("<p>This is a new paragraph.</p>").insertAfter("button");
+  });
+});
+
+tip:在使用js模版引擎的时候，DOM元素还没有被创建。使用jQuery的document.ready方法无法给元素创建事件
+
+index
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>To do首界面</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<div class="mainContent">
+    <div class="todoTitle">
+        <h1>事项列表</h1>
+        <h4></h4>
+    </div>
+    <div class="todoButton">
+        <input type="text" class="todo" placeholder="请输入事项内容"/>
+        <button type="button" class="addTodo">添加事项</button>
+    </div>
+    <div class="spared"></div>
+    <ul class="todoList">
+    </ul>
+    <div id="cover">
+    </div>
+    <div class="information">
+        <div class="informationTitle">提示信息</div>
+        <div class="informationContent">确认删除该事项?</div>
+        <div class="informationSelects"><img class="yes" src="img/yes.png"><img class="no" src="img/no.png"></div>
+    </div>
+</div>
+    <script type="text/javascript" src="js/jquery-2.1.4.js"></script>
+    <script type="text/javascript" src="js/todo.js"></script>
+</body>
+</html>
+
+js
+/**
+ * Created by 徐俊 on 2016/3/9.
+ */
+$(document).ready(function(){
+    //显示当前时间
+    $(".todoTitle h4").html("当前时间:"+new Date());
+    //添加事项
+    $(".addTodo").click(function(){
+        var text= $(".todo").val();
+        if(text != null && text != ""){
+            //添加新元素
+            var newDom = $("<li><div class='todoContent'><img src='img/coin1.png'/><span></span><button type='button' class='todo'>未做</button><button type='button' class='delete'>删除</button></div></li>");
+            $(".todoList").append(newDom);
+            $(".todoList li:last-child div.todoContent").children("span").html(text);
+            $(".todo").val("");
+        }
+        else{
+            alert("事项输入不能为空");
+        }
+        $("li:odd").css("background-color","#666666");
+    });
+});
+//设置正在做的事项和已完成的事项
+$(document).on("click",".todo",function(){
+    var isDoing = $(this).html();
+    if (isDoing == "未做") {
+        $(this).prev("span").css({"text-decoration": "line-through","text-decoration-color":"red"});
+        $(this).html("已做");
+        $(this).siblings("img").attr("src","img/coin2.png")
+    }
+    if (isDoing == "已做"){
+        $(this).prev("span").css({"text-decoration": "none"});
+        $(this).html("未做");
+        $(this).siblings("img").attr("src","img/coin1.png")
+    }
+});
+//删除事项
+$(document).on("click",".delete",function(){
+        $(this).parent().parent().attr("id","clean");
+        $(".information").show();
+        $("#cover").show();
+});
+$(document).on("click",".yes",function(){
+        $("#clean").remove();
+        $("#cover").hide();
+        $(".information").hide();
+})
+$(document).on("click",".no",function(){
+        $("#clean").removeAttr("id");  /*移除选中元素的id属性*/
+        $("#cover").hide();
+        $(".information").hide();
+})
+$(document).on("mouseover",".yes",function(){
+    $(this).attr("src","img/yes2.png");
+});
+$(document).on("mouseout",".yes",function(){
+    $(this).attr("src","img/yes.png");
+});
+$(document).on("mouseover",".no",function(){
+    $(this).attr("src","img/no2.png");
+});
+$(document).on("mouseout",".no",function(){
+    $(this).attr("src","img/no.png");
+});
+ 
+css
+.mainContent{
+    margin-left: 25%;
+    margin-top: 5%;
+    padding: 5px;
+    width: 1000px;
+    z-index: 1;
+}
+.todoTitle{
+    background-color: #333333;
+    height: 100px;
+    padding: 20px;
+    color: aliceblue;
+    font-family: 微软雅黑;
+}
+.todoButton{
+    margin: 10px;
+    height: 45px;
+}
+.spared{
+    background-color: #333333;
+    height: 5px;
+}
+.todoList{
+    -webkit-padding-start: 0px;
+}
+.todoList li{
+    list-style-type: none;
+    margin-top: 10px;
+    background-color: darkgray;
+}
+.todoContent *{
+    vertical-align:middle;
+}
+.todoContent img{
+    width: 40px;
+    height: 40px;
+}
+.todoContent span{
+    display:inline-block;
+    margin: 0;
+    padding-left: 20px;
+    width: 72%;
+    font-size: 30px;
+    font-family:微软雅黑;
+    font-weight: 600;
+    word-wrap:break-word;
+}
+.todo{
+    padding: 0px;
+    width: 800px;
+    height: 45px;
+    font-size: 25px;
+    font-family: 微软雅黑;
+}
+.addTodo,.todoList li button{
+    border: none;
+    padding: 0px;
+    font-size: 20px;
+    font-family:微软雅黑;
+    color: white;
+    background-color: #333333;
+}
+.addTodo:hover{
+    font-size: 25px;
+}
+.todoList li button:hover{
+    cursor: pointer;
+    font-size: 30px;
+}
+.addTodo{
+    width: 160px;
+    height: 45px;
+}
+.todoList li button {
+    width: 85px;
+    height: 40px;
+    margin-left: 10px;
+}
+#cover{
+    display: none;
+    position: fixed;
+    width: 1000px;
+    height: 100%;
+    top: 0;
+    color: aqua;
+}
+.information{
+    display: none;
+    position: fixed;
+    left: 40%;
+    bottom: 40%;
+    width: 500px;
+    height: 300px;
+    background-color: #999999;
+}
+.informationTitle,.informationContent{
+    font-size: 30px;
+    font-family: 微软雅黑;
+}
+.informationTitle{
+    padding-top: 20px;
+    padding-left: 10px;
+    height: 80px;
+    background-color: #333333;
+    color: white;
+}
+.informationContent{
+    height: 60px;
+    padding-top: 40px;
+    border-left: 5px solid #333;
+    border-right: 5px solid #333;
+    background-color: white;
+    text-align: center;
+    color: #333333;
+}
+.informationSelects{
+    border-right: 5px solid #333;
+    border-left: 5px solid #333;
+    border-bottom: 5px solid #333;
+    padding-left: 100px;
+    height: 100px;
+}
+.informationSelects img{
+    margin-left: 50px;
+    width: 80px;
+    height: 80px;
+}
